@@ -1,2 +1,2 @@
-# FLOWS_PROJECT
+# FLOWS
 Flood Warning System
