@@ -449,19 +449,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-        import {
-            getDatabase,
-            ref,
-            set,
-            get,
-            child
-        } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
-
-        import {
-            getMessaging,
-            getToken,
-            onMessage
-        } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-messaging.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
         // KONFIGURASI FIREBASE
         const firebaseConfig = {
@@ -476,42 +464,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const messaging = getMessaging(app);
-
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("./firebase-messaging-sw.js")
-            .then(async (registration) => {
-                console.log("Service Worker berhasil");
-                const permission = await Notification.requestPermission();
-                
-                if (permission === "granted") {
-                    const token = await getToken(messaging, {
-                        vapidKey: "BJ0jwZdjHl6Mmpaw_MVWJ5FU41UQkAuHB-3dYdawYvzmDfT1TxA3N2uVZr9mV9zQ0yeYg6fr1mUWFBI29y5K5qg",
-                        serviceWorkerRegistration: registration
-                    });
-                    if (token) {
-                        console.log("FCM Token:");
-                        console.log(token);
-                        // Simpan token ke Firebase jika diperlukan
-                         localStorage.setItem("fcmToken", token);
-                    } else {
-                        console.log("Token tidak berhasil dibuat.");
-                    }
-                    // Simpan token ke Firebase jika diperlukan
-                } else {
-                    console.log("Notifikasi ditolak");
-                }
-            });
-        }
-
-        onMessage(messaging, (payload) => {
-            console.log("Foreground Message:", payload);
-            Swal.fire({
-                icon: "info",
-                title: payload.notification?.title || "FLOWS",
-                text: payload.notification?.body || ""
-            });
-        });
 
         // --- FUNGSI REGISTER (Updated with SweetAlert2) ---
         document.getElementById('registerForm').addEventListener('submit', function(e) {
@@ -568,20 +520,7 @@
                             timer: 1500
                         }).then(() => {
                             localStorage.setItem("username", user);
-                            // Ambil token yang sudah dibuat
-                            const token = localStorage.getItem("fcmToken");
-                            // Simpan token ke akun user
-                            if (token) {
-                                set(ref(db, "FLOWS/Users/" + user + "/FCM"), {
-                                    token: token,
-                                    updatedAt: new Date().toISOString()
-                                }).then(() => {
-                                    console.log("FCM Token berhasil disimpan.");
-                                    window.location.href = "dashboard.html";
-                                });
-                            } else {
-                                window.location.href = "dashboard.html";
-                            } 
+                            window.location.href = "dashboard.html"; 
                         });
                     } else {
                         Swal.fire('Error', 'Password salah!', 'error');
