@@ -528,19 +528,10 @@
 
         const alarm = document.getElementById("alarmSound");
         let audioEnabled = false;
-        // Status terakhir yang sudah dikirim notifikasi
-        let lastNotificationStatus = "";
 
-        
         // Aktifkan audio setelah interaksi pertama user
-        document.addEventListener("click", async () => {
-        
-            if (Notification.permission === "default") {
-                await Notification.requestPermission();
-            }
-        
+        document.addEventListener("click", () => {
             if (!audioEnabled) {
-        
                 alarm.play()
                     .then(() => {
                         alarm.pause();
@@ -549,9 +540,7 @@
                         console.log("Audio berhasil diaktifkan");
                     })
                     .catch(err => console.log(err));
-        
             }
-        
         }, { once: true });
         
         const savedUsername = localStorage.getItem("username") || "Commander";
@@ -565,52 +554,6 @@
         renderTable();
         let isInitialDataLoaded = false; // Flag untuk mendeteksi data pertama
 
-        function showBrowserNotification(status) {
-        
-            if (!("Notification" in window)) return;
-            if (Notification.permission !== "granted") return;
-        
-            let title = "";
-            let body = "";
-        
-            if (status === "WASPADA") {
-        
-                title = "⚠️ FLOWS - STATUS WASPADA";
-        
-                body =
-                `Jarak Air : ${currentJarak} cm
-                Rainfall : ${currentRain} mm/jam
-                Soil : ${currentSoil} %
-        
-                Segera lakukan pengecekan lokasi.`;
-        
-            }
-        
-            if (status === "BAHAYA") {
-        
-                title = "🚨 FLOWS - STATUS BAHAYA";
-        
-                body =
-                `Jarak Air : ${currentJarak} cm
-                Rainfall : ${currentRain} mm/jam
-                Soil : ${currentSoil} %
-        
-                Potensi banjir tinggi!`;
-        
-            }
-        
-            new Notification = new Notification (title,{
-                body: body,
-                icon: "Assets/flowslogo.png",
-                badge: "Assets/flowslogo.png",
-                tag: "flows-status"
-            });
-                
-            notification.onclick = () => {
-                window.focus();
-                notification.close();
-            };
-        }
         window.toggleSidebar = function() {
             document.getElementById('sidebar').classList.toggle('show');
             document.getElementById('sidebarOverlay').classList.toggle('active');
@@ -744,23 +687,6 @@
                 document.getElementById("desc-soil").innerText = data.soil <= 40 ? "TANAH KERING" : (data.soil <= 80 ? "TANAH LEMBAB" : "TANAH BASAH");
                 
                 const st = currentStatus;
-                // Browser Notification
-                if (
-                    st !== lastNotificationStatus &&
-                    (st === "WASPADA" || st === "BAHAYA")
-                ) {
-                
-                    showBrowserNotification(st);
-                
-                    lastNotificationStatus = st;
-                
-                }
-                
-                if (st === "AMAN") {
-                    lastNotificationStatus = "";
-                }
-
-                
                 document.querySelectorAll('.indicator-item').forEach(el => el.className = "indicator-item");
                 
                 if (st === "AMAN") {
@@ -841,6 +767,6 @@
             doc.save(`History_Flows_${savedUsername}.pdf`);
         }
     </script>
-
+  
 </body>
 </html>
