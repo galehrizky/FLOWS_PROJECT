@@ -493,6 +493,7 @@
                         console.log("FCM Token:");
                         console.log(token);
                         // Simpan token ke Firebase jika diperlukan
+                         localStorage.setItem("fcmToken", token);
                     } else {
                         console.log("Token tidak berhasil dibuat.");
                     }
@@ -567,7 +568,20 @@
                             timer: 1500
                         }).then(() => {
                             localStorage.setItem("username", user);
-                            window.location.href = "dashboard.html"; 
+                            // Ambil token yang sudah dibuat
+                            const token = localStorage.getItem("fcmToken");
+                            // Simpan token ke akun user
+                            if (token) {
+                                set(ref(db, "FLOWS/Users/" + user + "/FCM"), {
+                                    token: token,
+                                    updatedAt: new Date().toISOString()
+                                }).then(() => {
+                                    console.log("FCM Token berhasil disimpan.");
+                                    window.location.href = "dashboard.html";
+                                });
+                            } else {
+                                window.location.href = "dashboard.html";
+                            } 
                         });
                     } else {
                         Swal.fire('Error', 'Password salah!', 'error');
