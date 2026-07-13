@@ -702,7 +702,7 @@
         }
 
         // Variabel penanda status terakhir untuk menghindari spam API
-        let statusTerakhir = "AMAN";
+        let statusTerakhir = ""; // Dikosongkan di awal agar data pertama dari Firebase langsung terbaca sebagai perubahan
 
         const dataPath = ref(db, 'FLOWS');
         onValue(dataPath, (snapshot) => {
@@ -711,17 +711,15 @@
                 currentJarak = data.jarak;
                 currentRain = data.rain;
                 currentSoil = data.soil;
-                currentStatus = data.status.toUpperCase();
+                currentStatus = data.status.toUpperCase().trim(); // Mengubah ke huruf kapital dan menghapus spasi tak terlihat
 
                 if (!isInitialDataLoaded) {
                     updateHistoryTable();
                     isInitialDataLoaded = true;
-                    // Sinkronisasi status awal agar tidak langsung menembak API saat halaman direfresh
-                    statusTerakhir = currentStatus; 
                 }
 
-                // --- LOGIKA PEMICUAN WEBPUSHR OTOMATIS BERDASARKAN PERUBAHAN STATUS ---
-                if (currentStatus !== statusTerakhir) {
+                // --- LOGIKA PEMICUAN WEBPUSHR PUSH NOTIFICATION ---
+                if (statusTerakhir !== "" && currentStatus !== statusTerakhir) {
                     if (currentStatus === "WASPADA") {
                         kirimNotifikasiEWS(
                             "WASPADA", 
@@ -734,9 +732,12 @@
                             "Status darurat! Segera aktifkan pompa air utama dan evakuasi daerah Tegalsari."
                         );
                     }
-                    statusTerakhir = currentStatus; // Perbarui status pengunci
                 }
+                
+                // Perbarui status pengunci setelah pengecekan selesai
+                statusTerakhir = currentStatus; 
 
+                // --- UPDATE UI DASHBOARD ---
                 document.getElementById("val-jarak").innerHTML = `${data.jarak}<span class="card-unit">cm</span>`;
                 document.getElementById("desc-jarak").innerText = data.jarak <= 40 ? "DEKAT" : (data.jarak <= 80 ? "SEDANG" : "JAUH");
                 document.getElementById("val-rain").innerHTML = `${data.rain}<span class="card-unit">mm/jam</span>`;
