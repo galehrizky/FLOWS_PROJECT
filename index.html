@@ -250,8 +250,8 @@
         }
     </style>
 
-    <script>
-// 1. Daftarkan Service Worker secara manual ke sub-folder GitHub Pages
+   <script>
+// 1. Daftarkan Service Worker secara manual terlebih dahulu
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/FLOWS_PROJECT/webpushr-sw.js', { scope: '/FLOWS_PROJECT/' })
     .then(function(reg) {
@@ -261,15 +261,22 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// 2. Load SDK Webpushr
-(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
-
-// 3. Setup Webpushr dengan mematikan Auto-Register agar tidak mencari ke akar domain
+// 2. Siapkan konfigurasi Webpushr terlebih dahulu (Deklarasi Awal)
+window.webpushr = window.webpushr || function(){(window.webpushr.q=window.webpushr.q||[]).push(arguments)};
 webpushr('setup', {
     'key': 'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA', 
     'path': '/FLOWS_PROJECT/',
-    'autoRegister': false // Kunci utama: Melarang Webpushr mendaftar sendiri demi menghindari eror 404
+    'autoRegister': false
 });
+
+// 3. Baru muat file SDK Webpushr dari CDN
+(function(w,d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id; js.async = 1;
+    js.src = "https://cdn.webpushr.com/app.min.js";
+    fjs.parentNode.appendChild(js);
+}(window, document, 'script', 'webpushr-jssdk'));
 </script>
     
 </head>
