@@ -347,7 +347,23 @@
     }
     </style>
 
-    <!-- start webpushr code --> <script>(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));webpushr('setup',{'key':'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA', 'path': '/FLOWS_PROJECT/' });</script><!-- end webpushr code -->
+    <script>
+// 1. Daftarkan Service Worker secara manual dengan scope yang benar
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/FLOWS_PROJECT/webpushr-sw.js', { scope: '/FLOWS_PROJECT/' })
+    .then(function(reg) {
+        console.log('Service Worker berhasil didaftarkan secara manual pada scope: ', reg.scope);
+    }).catch(function(err) {
+        console.error('Pendaftaran Service Worker gagal secara manual: ', err);
+    });
+}
+
+// 2. Inisialisasi Webpushr
+(function(w,d, s, id) {if(typeof(w.webpushr)!=='undefined') return;w.webpushr=w.webpushr||function(){(w.webpushr.q=w.webpushr.q||[]).push(arguments)};var js, fjs = d.getElementsByTagName(s)[0];js = d.createElement(s); js.id = id;js.async=1;js.src = "https://cdn.webpushr.com/app.min.js";fjs.parentNode.appendChild(js);}(window,document, 'script', 'webpushr-jssdk'));
+
+// Tetap sertakan parameter path di sini sebagai cadangan
+webpushr('setup',{'key':'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA', 'path': '/FLOWS_PROJECT/' });
+</script>
     
 </head>
 <body>
