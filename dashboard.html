@@ -300,56 +300,54 @@
         /* TAMBAHKAN DI SINI */
         @media (max-width: 576px) {
 
-        .history-panel {
-            padding: 10px;
-        }
+            .history-panel {
+                padding: 10px;
+            }
 
-        .table-custom {
-            min-width: 600px;
-        }
+            .table-custom {
+                min-width: 600px;
+            }
 
-        .table-custom thead th,
-        .table-custom tbody td {
-            font-size: 0.65rem;
-            padding: 8px 4px;
-            white-space: nowrap;
-        }
+            .table-custom thead th,
+            .table-custom tbody td {
+                font-size: 0.65rem;
+                padding: 8px 4px;
+                white-space: nowrap;
+            }
 
-        .table-custom th:nth-child(1),
-        .table-custom td:nth-child(1) {
-            width: 8%;
-        }
+            .table-custom th:nth-child(1),
+            .table-custom td:nth-child(1) {
+                width: 8%;
+            }
 
-        .table-custom th:nth-child(2),
-        .table-custom td:nth-child(2) {
-            width: 22%;
-        }
+            .table-custom th:nth-child(2),
+            .table-custom td:nth-child(2) {
+                width: 22%;
+            }
 
-        .table-custom th:nth-child(3),
-        .table-custom td:nth-child(3) {
-            width: 18%;
-        }
+            .table-custom th:nth-child(3),
+            .table-custom td:nth-child(3) {
+                width: 18%;
+            }
 
-        .table-custom th:nth-child(4),
-        .table-custom td:nth-child(4) {
-            width: 16%;
-        }
+            .table-custom th:nth-child(4),
+            .table-custom td:nth-child(4) {
+                width: 16%;
+            }
 
-        .table-custom th:nth-child(5),
-        .table-custom td:nth-child(5) {
-            width: 16%;
-        }
+            .table-custom th:nth-child(5),
+            .table-custom td:nth-child(5) {
+                width: 16%;
+            }
 
-        .table-custom th:nth-child(6),
-        .table-custom td:nth-child(6) {
-            width: 20%;
+            .table-custom th:nth-child(6),
+            .table-custom td:nth-child(6) {
+                width: 20%;
+            }
         }
-    }
     </style>
 
-    <!-- start webpushr code -->
     <script>
-        // Konfigurasi standar tanpa memaksakan path lokal atau mematikan service worker
         window.webpushr = window.webpushr || function(){(window.webpushr.q=window.webpushr.q||[]).push(arguments)};
         webpushr('setup', {
             'key': 'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA'
@@ -363,9 +361,7 @@
             fjs.parentNode.appendChild(js);
         }(window, document, 'script', 'webpushr-jssdk'));
     </script>
-    <!-- end webpushr code -->
-    
-</head>
+    </head>
 <body>
 
     <audio id="alarmSound" src="Assets/alarm.mp3" preload="auto" loop></audio>
@@ -520,7 +516,7 @@
                                 </tr>
                             </thead>
                             <tbody id="historyBody">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -653,14 +649,11 @@
 
             historyData.push(newData);
 
-            // Simpan hanya 100 data terakhir
             if (historyData.length > 100) {
                 historyData = [];
             }
 
-            // Simpan ke localStorage browser
             localStorage.setItem("flowsHistory", JSON.stringify(historyData));
-
             renderTable();
         }
 
@@ -678,10 +671,38 @@
             `).join('');
         }
 
-        // Interval data histori setiap 5 menit tetap berjalan
         setInterval(updateHistoryTable, 300000);
 
-        let lastStatus = "";
+        // --- INTEGRASI STRUKTUR FUNGSI WEBPUSHR REST API ---
+        function kirimNotifikasiEWS(statusBanjir, pesanDetail) {
+            const url = 'https://api.webpushr.com/v1/notification/send/all';
+            
+            const dataNotifikasi = {
+                title: `FLOWS EWS: STATUS ${statusBanjir.toUpperCase()}`,
+                message: pesanDetail,
+                target_url: 'https://galehrizky.github.io/FLOWS_PROJECT/dashboard.html'
+            };
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'webpushrKey': '33030a481d9cdb352c6c8bad61750558',
+                    'webpushrAuthToken': '122719'
+                },
+                body: JSON.stringify(dataNotifikasi)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Notifikasi EWS Otomatis Berhasil Dikirim:', data);
+            })
+            .catch((error) => {
+                console.error('Gagal memicu API Webpushr:', error);
+            });
+        }
+
+        // Variabel penanda status terakhir untuk menghindari spam API
+        let statusTerakhir = "AMAN";
 
         const dataPath = ref(db, 'FLOWS');
         onValue(dataPath, (snapshot) => {
@@ -692,10 +713,28 @@
                 currentSoil = data.soil;
                 currentStatus = data.status.toUpperCase();
 
-                // Cek jika ini adalah pertama kali data diterima dari Firebase
                 if (!isInitialDataLoaded) {
-                    updateHistoryTable(); // Isi tabel dengan data sensor pertama kali (Bukan 0)
+                    updateHistoryTable();
                     isInitialDataLoaded = true;
+                    // Sinkronisasi status awal agar tidak langsung menembak API saat halaman direfresh
+                    statusTerakhir = currentStatus; 
+                }
+
+                // --- LOGIKA PEMICUAN WEBPUSHR OTOMATIS BERDASARKAN PERUBAHAN STATUS ---
+                if (currentStatus !== statusTerakhir) {
+                    if (currentStatus === "WASPADA") {
+                        kirimNotifikasiEWS(
+                            "WASPADA", 
+                            "Tinggi air meningkat. Petugas rumah pompa harap bersiap."
+                        );
+                    } 
+                    else if (currentStatus === "BAHAYA") {
+                        kirimNotifikasiEWS(
+                            "BAHAYA", 
+                            "Status darurat! Segera aktifkan pompa air utama dan evakuasi daerah Tegalsari."
+                        );
+                    }
+                    statusTerakhir = currentStatus; // Perbarui status pengunci
                 }
 
                 document.getElementById("val-jarak").innerHTML = `${data.jarak}<span class="card-unit">cm</span>`;
@@ -714,20 +753,14 @@
                     alarm.currentTime = 0;
                 } else if (st === "WASPADA") {
                     document.getElementById("status-waspada").classList.add("active-waspada");
-
                     alarm.pause();
                     alarm.currentTime = 0;
-
                 } else if (st === "BAHAYA") {
                     document.getElementById("status-bahaya").classList.add("active-bahaya");
-
                     alarm.play().catch(e => 
                         console.log("Menunggu interaksi user untuk suara.")
                     );
-
                 }
-
-                lastStatus = st;
 
                 document.getElementById("val-temp").innerHTML = `${data.temp}<span class="card-unit">°C</span>`;
                 document.getElementById("val-hum").innerHTML = `${data.hum}<span class="card-unit">%</span>`;
@@ -782,10 +815,8 @@
                     5: { halign: 'center' }
                 }
             });
-
-            doc.save(`History_Flows_${savedUsername}.pdf`);
+            doc.save(`Laporan_FLOWS_${Date.now()}.pdf`);
         }
     </script>
-
 </body>
 </html>
