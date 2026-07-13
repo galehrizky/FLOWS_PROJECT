@@ -347,35 +347,23 @@
     }
     </style>
 
+    <!-- start webpushr code -->
     <script>
-    // 1. Pendaftaran manual tetap berjalan untuk mengunci background service
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/FLOWS_PROJECT/webpushr-sw.js', { scope: '/FLOWS_PROJECT/' })
-        .then(function(reg) {
-            console.log('Service Worker sukses didaftarkan pada scope: ', reg.scope);
-        }).catch(function(err) {
-            console.error('Pendaftaran Service Worker gagal: ', err);
+        // Konfigurasi standar tanpa memaksakan path lokal atau mematikan service worker
+        window.webpushr = window.webpushr || function(){(window.webpushr.q=window.webpushr.q||[]).push(arguments)};
+        webpushr('setup', {
+            'key': 'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA'
         });
-    }
     
-    // 2. Deklarasi awal konfigurasi dengan trik menonaktifkan deteksi otomatis
-    window.webpushr = window.webpushr || function(){(window.webpushr.q=window.webpushr.q||[]).push(arguments)};
-    webpushr('setup', {
-        'key': 'BBnQfqN7SgiENmJGs-f94EnL7l4mTA4J7_qw7PRp86XswWu_i6BRLeuCHccfVDxCUW5yS66YudHnl_0hu9lhFkA', 
-        'path': '/FLOWS_PROJECT/',
-        'autoRegister': false,
-        'loadServiceWorker': false // Trik tambahan: Melarang SDK memuat ulang SW bawaannya yang memicu 404
-    });
-    
-    // 3. Muat SDK Webpushr
-    (function(w,d, s, id) {
-        var js, fjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s); js.id = id; js.async = 1;
-        js.src = "https://cdn.webpushr.com/app.min.js";
-        fjs.parentNode.appendChild(js);
-    }(window, document, 'script', 'webpushr-jssdk'));
+        (function(w,d, s, id) {
+            var js, fjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s); js.id = id; js.async = 1;
+            js.src = "https://cdn.webpushr.com/app.min.js";
+            fjs.parentNode.appendChild(js);
+        }(window, document, 'script', 'webpushr-jssdk'));
     </script>
+    <!-- end webpushr code -->
     
 </head>
 <body>
