@@ -620,6 +620,58 @@
         const cRain = createChart('chartRain', 'Hujan', '#f1c40f', 100);
         const cSoil = createChart('chartSoil', 'Tanah', '#00ff88', 100);
 
+        // --- AMBIL DATA DARI FIREBASE SECARA REAL-TIME ---
+        const dataPath = ref(db, 'FLOWS');
+        onValue(dataPath, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Ambil nilai dari firebase dan simpan ke variabel lokal global
+                currentJarak = data.jarak;
+                currentRain = data.rain;
+                currentSoil = data.soil;
+                currentStatus = data.status.toUpperCase().trim();
+
+                // Masukkan data ke tabel histori pada pemuatan awal jika belum terisi
+                if (!isInitialDataLoaded) {
+                    updateHistoryTable();
+                    isInitialDataLoaded = true;
+                }
+
+                // Update UI Monitoring Utama
+                document.getElementById("val-jarak").innerHTML = `${data.jarak}<span class="card-unit">cm</span>`;
+                document.getElementById("desc-jarak").innerText = data.jarak <= 40 ? "DEKAT" : (data.jarak <= 80 ? "SEDANG" : "JAUH");
+                
+                document.getElementById("val-rain").innerHTML = `${data.rain}<span class="card-unit">mm/jam</span>`;
+                document.getElementById("desc-rain").innerText = data.rain <= 5 ? "TIDAK HUJAN" : (data.rain <= 50 ? "GERIMIS" : "HUJAN DERAS");
+                
+                document.getElementById("val-soil").innerHTML = `${data.soil}<span class="card-unit">%</span>`;
+                document.getElementById("desc-soil").innerText = data.soil <= 40 ? "TANAH KERING" : (data.soil <= 80 ? "TANAH LEMBAB" : "TANAH BASAH");
+                
+                document.getElementById("val-temp").innerHTML = `${data.temp}<span class="card-unit">°C</span>`;
+                document.getElementById("val-hum").innerHTML = `${data.hum}<span class="card-unit">%</span>`;
+                
+                // Update Lampu Indikator Sistem & Kontrol Audio Alarm Lokal
+                const st = currentStatus;
+                document.querySelectorAll('.indicator-item').forEach(el => el.className = "indicator-item");
+                
+                if (st === "AMAN") {
+                    document.getElementById("status-aman").classList.add("active-aman");
+                    alarm.pause();
+                    alarm.currentTime = 0;
+                } else if (st === "WASPADA") {
+                    document.getElementById("status-waspada").classList.add("active-waspada");
+                    alarm.pause();
+                    alarm.currentTime = 0;
+                } else if (st === "BAHAYA") {
+                    document.getElementById("status-bahaya").classList.add("active-bahaya");
+                    if (audioEnabled) {
+                        alarm.play().catch(e => console.log("Gagal memutar suara alarm: ", e));
+                    }
+                }
+            }
+        });
+
+        // Loop untuk update grafik data secara periodik setiap 5 detik
         setInterval(() => {
             const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const charts = [{ chart: cJarak, val: currentJarak }, { chart: cRain, val: currentRain }, { chart: cSoil, val: currentSoil }];
@@ -650,7 +702,7 @@
             historyData.push(newData);
 
             if (historyData.length > 100) {
-                historyData = [];
+                historyData.shift(); // Menghapus data paling lama jika melebihi 100 entri
             }
 
             localStorage.setItem("flowsHistory", JSON.stringify(historyData));
@@ -671,102 +723,8 @@
             `).join('');
         }
 
+        // Simpan data histori secara berkala (setiap 5 menit)
         setInterval(updateHistoryTable, 300000);
-
-        // --- INTEGRASI STRUKTUR FUNGSI WEBPUSHR REST API ---
-        function kirimNotifikasiEWS(statusBanjir, pesanDetail) {
-            const url = 'https://api.webpushr.com/v1/notification/send/all';
-            
-            const dataNotifikasi = {
-                title: `FLOWS EWS: STATUS ${statusBanjir.toUpperCase()}`,
-                message: pesanDetail,
-                target_url: 'https://galehrizky.github.io/FLOWS_PROJECT/dashboard.html'
-            };
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'webpushrKey': '33030a481d9cdb352c6c8bad61750558',
-                    'webpushrAuthToken': '122719'
-                },
-                body: JSON.stringify(dataNotifikasi)
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Notifikasi EWS Otomatis Berhasil Dikirim:', data);
-            })
-            .catch((error) => {
-                console.error('Gagal memicu API Webpushr:', error);
-            });
-        }
-
-        // Variabel penanda status terakhir untuk menghindari spam API
-        let statusTerakhir = ""; // Dikosongkan di awal agar data pertama dari Firebase langsung terbaca sebagai perubahan
-
-        const dataPath = ref(db, 'FLOWS');
-        onValue(dataPath, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                currentJarak = data.jarak;
-                currentRain = data.rain;
-                currentSoil = data.soil;
-                currentStatus = data.status.toUpperCase().trim(); // Mengubah ke huruf kapital dan menghapus spasi tak terlihat
-
-                if (!isInitialDataLoaded) {
-                    updateHistoryTable();
-                    isInitialDataLoaded = true;
-                }
-
-                // --- LOGIKA PEMICUAN WEBPUSHR PUSH NOTIFICATION ---
-                if (statusTerakhir !== "" && currentStatus !== statusTerakhir) {
-                    if (currentStatus === "WASPADA") {
-                        kirimNotifikasiEWS(
-                            "WASPADA", 
-                            "Tinggi air meningkat. Petugas rumah pompa harap bersiap."
-                        );
-                    } 
-                    else if (currentStatus === "BAHAYA") {
-                        kirimNotifikasiEWS(
-                            "BAHAYA", 
-                            "Status darurat! Segera aktifkan pompa air utama dan evakuasi daerah Tegalsari."
-                        );
-                    }
-                }
-                
-                // Perbarui status pengunci setelah pengecekan selesai
-                statusTerakhir = currentStatus; 
-
-                // --- UPDATE UI DASHBOARD ---
-                document.getElementById("val-jarak").innerHTML = `${data.jarak}<span class="card-unit">cm</span>`;
-                document.getElementById("desc-jarak").innerText = data.jarak <= 40 ? "DEKAT" : (data.jarak <= 80 ? "SEDANG" : "JAUH");
-                document.getElementById("val-rain").innerHTML = `${data.rain}<span class="card-unit">mm/jam</span>`;
-                document.getElementById("desc-rain").innerText = data.rain <= 5 ? "TIDAK HUJAN" : (data.rain <= 50 ? "GERIMIS" : "HUJAN DERAS");
-                document.getElementById("val-soil").innerHTML = `${data.soil}<span class="card-unit">%</span>`;
-                document.getElementById("desc-soil").innerText = data.soil <= 40 ? "TANAH KERING" : (data.soil <= 80 ? "TANAH LEMBAB" : "TANAH BASAH");
-                
-                const st = currentStatus;
-                document.querySelectorAll('.indicator-item').forEach(el => el.className = "indicator-item");
-                
-                if (st === "AMAN") {
-                    document.getElementById("status-aman").classList.add("active-aman");
-                    alarm.pause();
-                    alarm.currentTime = 0;
-                } else if (st === "WASPADA") {
-                    document.getElementById("status-waspada").classList.add("active-waspada");
-                    alarm.pause();
-                    alarm.currentTime = 0;
-                } else if (st === "BAHAYA") {
-                    document.getElementById("status-bahaya").classList.add("active-bahaya");
-                    alarm.play().catch(e => 
-                        console.log("Menunggu interaksi user untuk suara.")
-                    );
-                }
-
-                document.getElementById("val-temp").innerHTML = `${data.temp}<span class="card-unit">°C</span>`;
-                document.getElementById("val-hum").innerHTML = `${data.hum}<span class="card-unit">%</span>`;
-            }
-        });
 
         window.switchView = function(viewId, element) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
