@@ -508,6 +508,7 @@
                             <thead>
                                 <tr>
                                     <th>No.</th>
+                                    <th>Tanggal</th>
                                     <th>Waktu</th>
                                     <th>Jarak</th>
                                     <th>Soil</th>
@@ -661,8 +662,6 @@
 
                 // Masukkan data ke tabel histori pada pemuatan awal jika belum terisi
                 if (!isInitialDataLoaded) {
-                    updateGraph();  
-                    updateHistoryTable();
                     isInitialDataLoaded = true;
                 }
 
@@ -703,32 +702,46 @@
         
         function updateHistoryTable() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const tanggal = now.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            
+            const waktu = now.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
             
             const newData = {
-                no: (historyData.length % 100) + 1,
-                waktu: timeString,
+                tanggal: tanggal,
+                waktu: waktu,
                 jarak: Math.round(currentJarak),
                 soil: currentSoil,
                 rain: currentRain,
                 status: currentStatus
             };
-
             historyData.push(newData);
 
+            // Maksimal simpan 100 data
             if (historyData.length > 100) {
-                historyData.shift(); // Menghapus data paling lama jika melebihi 100 entri
+                historyData.shift();
             }
-
+        
+            // Simpan ke Local Storage
             localStorage.setItem("flowsHistory", JSON.stringify(historyData));
+        
+            // Perbarui tabel
             renderTable();
         }
-
+        
         function renderTable() {
             const body = document.getElementById("historyBody");
             body.innerHTML = historyData.map((d, index) => `
                 <tr>
                     <td>${index + 1}</td>
+                    <td>${d.tanggal}</td>
                     <td>${d.waktu}</td>
                     <td>${d.jarak}</td>
                     <td>${d.soil}</td>
@@ -796,11 +809,11 @@
             
             const rows = [];
             historyData.forEach(d => {
-                rows.push([d.no, d.waktu, d.jarak, d.soil, d.rain, d.status]);
+                rows.push([d.no, d.tanggal, d.waktu, d.jarak, d.soil, d.rain, d.status]);
             });
 
             doc.autoTable({
-                head: [['No.', 'Waktu', 'Jarak (cm)', 'Soil', 'Rain', 'Status']],
+                head: [['No.', 'Tanggal', 'Waktu', 'Jarak (cm)', 'Soil', 'Rain', 'Status']],
                 body: rows,
                 startY: 45,
                 theme: 'grid',
