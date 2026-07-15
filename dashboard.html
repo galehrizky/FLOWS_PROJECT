@@ -492,7 +492,7 @@
             </div>
 
             <div id="view-history" class="view-section">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
                     <div>
                         <h3 style="font-family: 'Orbitron'; font-size: 1.2rem; margin-bottom: 5px;">Data History</h3>
                         <div id="currentDateDisplay" class="date-display">--</div>
@@ -514,7 +514,6 @@
                             <table class="table table-custom" id="historyTable">
                                 <thead>
                                     <tr>
-                                        <th>No.</th>
                                         <th>Tanggal</th>
                                         <th>Waktu</th>
                                         <th>Jarak</th>
@@ -574,6 +573,12 @@
 
         let currentJarak = 0, currentRain = 0, currentSoil = 0, currentStatus = "AMAN";
         let historyData = JSON.parse(localStorage.getItem("flowsHistory")) || [];
+        let graphData = JSON.parse(localStorage.getItem("flowsGraph")) || {
+            labels: [],
+            jarak: [],
+            rain: [],
+            soil: []
+        };
 
         renderTable();
         let isInitialDataLoaded = false; // Flag untuk mendeteksi data pertama
@@ -625,38 +630,65 @@
             });
         }
 
+        function loadGraph() {
+
+            cJarak.data.labels = [...graphData.labels];
+            cRain.data.labels = [...graphData.labels];
+            cSoil.data.labels = [...graphData.labels];
+        
+            cJarak.data.datasets[0].data = [...graphData.jarak];
+            cRain.data.datasets[0].data = [...graphData.rain];
+            cSoil.data.datasets[0].data = [...graphData.soil];
+        
+            cJarak.update();
+            cRain.update();
+            cSoil.update();
+        }
+
         const cJarak = createChart('chartJarak', 'Jarak Air', '#00d2ff', 300);
         const cRain = createChart('chartRain', 'Hujan', '#f1c40f', 100);
         const cSoil = createChart('chartSoil', 'Tanah', '#00ff88', 100);
 
-        function updateGraph() {
+        loadGraph();
+
+       function updateGraph() {
 
             const time = new Date().toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit'
             });
         
-            const charts = [
-                { chart: cJarak, val: currentJarak },
-                { chart: cRain, val: currentRain },
-                { chart: cSoil, val: currentSoil }
-            ];
+            // Simpan ke localStorage
+            graphData.labels.push(time);
+            graphData.jarak.push(currentJarak);
+            graphData.rain.push(currentRain);
+            graphData.soil.push(currentSoil);
         
-            charts.forEach(item => {
+            // Maksimal hanya 5 data
+            if (graphData.labels.length > 5) {
+                graphData.labels.shift();
+                graphData.jarak.shift();
+                graphData.rain.shift();
+                graphData.soil.shift();
+            }
         
-                if(item.chart.data.labels.length > 15){
-                    item.chart.data.labels.shift();
-                    item.chart.data.datasets[0].data.shift();
-                }
+            // Simpan
+            localStorage.setItem("flowsGraph", JSON.stringify(graphData));
         
-                item.chart.data.labels.push(time);
-                item.chart.data.datasets[0].data.push(item.val);
+            // Update grafik
+            cJarak.data.labels = [...graphData.labels];
+            cRain.data.labels = [...graphData.labels];
+            cSoil.data.labels = [...graphData.labels];
         
-                item.chart.update('none');
+            cJarak.data.datasets[0].data = [...graphData.jarak];
+            cRain.data.datasets[0].data = [...graphData.rain];
+            cSoil.data.datasets[0].data = [...graphData.soil];
         
-            });
-        
+            cJarak.update();
+            cRain.update();
+            cSoil.update();
         }
+        
         // --- AMBIL DATA DARI FIREBASE SECARA REAL-TIME ---
         const dataPath = ref(db, 'FLOWS');
         onValue(dataPath, (snapshot) => {
@@ -744,7 +776,6 @@
             const body = document.getElementById("historyBody");
             body.innerHTML = historyData.map((d, index) => `
                 <tr>
-                    <td>${index + 1}</td>
                     <td>${d.tanggal}</td>
                     <td>${d.waktu}</td>
                     <td>${d.jarak}</td>
@@ -768,7 +799,7 @@
         
             if (
                 minute % 5 === 0 &&
-                second === 0 &&
+                second < 5 &&
                 key !== lastUpdate
             ) {
         
@@ -838,9 +869,19 @@
             if (confirm("Apakah Anda yakin ingin menghapus seluruh data history?")) {
         
                 historyData = [];
-        
                 localStorage.removeItem("flowsHistory");
-        
+                
+                graphData = {
+                    labels: [],
+                    jarak: [],
+                    rain: [],
+                    soil: []
+                };
+                
+                localStorage.removeItem("flowsGraph");
+                
+                loadGraph();
+                
                 renderTable();
         
                 alert("Data history berhasil dihapus.");
