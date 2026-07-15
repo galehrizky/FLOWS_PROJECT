@@ -620,6 +620,34 @@
         const cRain = createChart('chartRain', 'Hujan', '#f1c40f', 100);
         const cSoil = createChart('chartSoil', 'Tanah', '#00ff88', 100);
 
+        function updateGraph() {
+
+            const time = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        
+            const charts = [
+                { chart: cJarak, val: currentJarak },
+                { chart: cRain, val: currentRain },
+                { chart: cSoil, val: currentSoil }
+            ];
+        
+            charts.forEach(item => {
+        
+                if(item.chart.data.labels.length > 15){
+                    item.chart.data.labels.shift();
+                    item.chart.data.datasets[0].data.shift();
+                }
+        
+                item.chart.data.labels.push(time);
+                item.chart.data.datasets[0].data.push(item.val);
+        
+                item.chart.update('none');
+        
+            });
+        
+        }
         // --- AMBIL DATA DARI FIREBASE SECARA REAL-TIME ---
         const dataPath = ref(db, 'FLOWS');
         onValue(dataPath, (snapshot) => {
@@ -633,6 +661,7 @@
 
                 // Masukkan data ke tabel histori pada pemuatan awal jika belum terisi
                 if (!isInitialDataLoaded) {
+                    updateGraph();  
                     updateHistoryTable();
                     isInitialDataLoaded = true;
                 }
@@ -671,21 +700,7 @@
             }
         });
 
-        // Loop untuk update grafik data secara periodik setiap 5 detik
-        setInterval(() => {
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const charts = [{ chart: cJarak, val: currentJarak }, { chart: cRain, val: currentRain }, { chart: cSoil, val: currentSoil }];
-            charts.forEach(item => {
-                if (item.chart.data.labels.length > 15) {
-                    item.chart.data.labels.shift();
-                    item.chart.data.datasets[0].data.shift();
-                }
-                item.chart.data.labels.push(time);
-                item.chart.data.datasets[0].data.push(item.val);
-                item.chart.update('none');
-            });
-        }, 300000);
-
+        
         function updateHistoryTable() {
             const now = new Date();
             const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -723,8 +738,33 @@
             `).join('');
         }
 
-        // Simpan data histori secara berkala (setiap 5 menit)
-        setInterval(updateHistoryTable, 300000);
+        let lastUpdate = "";
+
+        setInterval(() => {
+        
+            const now = new Date();
+        
+            const minute = now.getMinutes();
+            const second = now.getSeconds();
+        
+            const key = `${now.getHours()}-${minute}`;
+        
+            if (
+                minute % 5 === 0 &&
+                second === 0 &&
+                key !== lastUpdate
+            ) {
+        
+                lastUpdate = key;
+        
+                updateGraph();
+                updateHistoryTable();
+        
+                console.log("Data tersimpan:", now);
+        
+            }
+        
+        }, 1000);
 
         window.switchView = function(viewId, element) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
